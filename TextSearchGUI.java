@@ -127,7 +127,7 @@ public class TextSearchGUI extends JFrame {
             String line = tp.normalize(lines.get(i));
             int index = 0;
             
-            // Corrected to find overlapping matches
+    
             while ((index = BoyerMooreHorspool.search(line, searchPattern, index)) != -1) {
                 boolean match = true;
                 if (isWholeWord) {
