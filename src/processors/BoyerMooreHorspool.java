@@ -1,13 +1,12 @@
-import java.util.HashMap;
-import java.util.Map;
+package src.processors;
+import java.util.*;
 
 public class BoyerMooreHorspool {
 
-    //? preprocess for buldShiftTable
     private static Map<Character, Integer> buildShiftTable(String pattern) {
         Map<Character, Integer> table = new HashMap<>();
         int m = pattern.length();
-        for (int i = 0; i < m - 1; i++) { //! m - 1 to exclude the last char
+        for (int i = 0; i < m - 1; i++) {
             table.put(pattern.charAt(i), m - 1 - i);
         }
         return table;
@@ -18,19 +17,15 @@ public class BoyerMooreHorspool {
         int m = pattern.length();
         Map<Character, Integer> table = buildShiftTable(pattern);
         int i = startIndex;
-
         while (i <= n - m) {
             int j = m - 1;
             while (j >= 0 && pattern.charAt(j) == text.charAt(i + j)) {
-                j--; //? matches from right to left
+                j--;
             }
-            if (j < 0) return i; //? found
-
+            if (j < 0) return i; 
             char c = text.charAt(i + m - 1);
-            int shift = table.getOrDefault(c, m);
-
-            i += shift; 
+            i += table.getOrDefault(c, m);
         }
-        return -1; // not found
+        return -1;
     }
 }

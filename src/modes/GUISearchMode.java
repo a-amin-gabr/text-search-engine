@@ -1,10 +1,17 @@
+package src.modes;
+
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import src.models.Occurrence;
+import src.processors.BoyerMooreHorspool;
+import src.processors.TextProcessor;
+
 import java.awt.*;
 import java.io.*;
 import java.util.List;
 
-public class TextSearchGUI extends JFrame {
+public class GUISearchMode extends JFrame implements src.interfaces.SearchInterface {
     private TextProcessor tp = new TextProcessor();
     private JTextField searchField;
     private JComboBox<String> searchMode; 
@@ -12,11 +19,10 @@ public class TextSearchGUI extends JFrame {
     private JTextArea resultArea;
     private JLabel fileLabel;
 
-    public TextSearchGUI() {
+    public GUISearchMode() {
         super("Advanced Text Search Tool");
         setLayout(new BorderLayout());
 
-        // --- Top Panel: File Operations ---
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         loadButton = new JButton("Load File");
         fileLabel = new JLabel("No file loaded");
@@ -24,18 +30,15 @@ public class TextSearchGUI extends JFrame {
         topPanel.add(fileLabel);
         add(topPanel, BorderLayout.NORTH);
 
-        // --- Center Panel: Results Display ---
         resultArea = new JTextArea(20, 60);
         resultArea.setEditable(false);
         resultArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane scrollPane = new JScrollPane(resultArea);
         add(scrollPane, BorderLayout.CENTER);
 
-        // --- Bottom Panel: Search Configuration ---
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchField = new JTextField(20);
-        
-        // Options: Prefix, Substring, Whole Word
+
         String[] modes = { "Prefix", "Substring", "Whole Word" };
         searchMode = new JComboBox<>(modes);
         
@@ -47,7 +50,6 @@ public class TextSearchGUI extends JFrame {
         bottomPanel.add(searchButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // --- Actions ---
         loadButton.addActionListener(e -> loadFile());
         searchButton.addActionListener(e -> performSearch());
 
@@ -57,13 +59,18 @@ public class TextSearchGUI extends JFrame {
         setVisible(true);
     }
 
-    private void loadFile() {
+    @Override
+    public void run() {
+        SwingUtilities.invokeLater(GUISearchMode::new);
+    }
+    
+        private void loadFile() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
             try {
-                // Read file once and index it
+                
                 tp.loadFile(file.getAbsolutePath());
                 fileLabel.setText(file.getName() + " (Ready)");
                 resultArea.setText("File loaded and indexed successfully!\n");
@@ -82,19 +89,17 @@ public class TextSearchGUI extends JFrame {
 
         resultArea.setText("--- Search Results ---\n");
         String mode = (String) searchMode.getSelectedItem();
-        
-        // Measure execution time (excluding I/O)
+
         long startTime = System.nanoTime();
         
         if ("Prefix".equals(mode)) {
             displayPrefixResults(query);
         } else {
-            // Fixed: Handles overlapping matches
             displayBoyerMooreResults(query, "Whole Word".equals(mode));
         }
 
         long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000; // Microseconds
+        long duration = (endTime - startTime) / 1000; 
         
         resultArea.append("\n----------------------\n");
         resultArea.append("Execution Time: " + duration + " microseconds\n");
@@ -126,8 +131,7 @@ public class TextSearchGUI extends JFrame {
         for (int i = 0; i < lines.size(); i++) {
             String line = tp.normalize(lines.get(i));
             int index = 0;
-            
-    
+
             while ((index = BoyerMooreHorspool.search(line, searchPattern, index)) != -1) {
                 boolean match = true;
                 if (isWholeWord) {
@@ -138,9 +142,7 @@ public class TextSearchGUI extends JFrame {
                     count++;
                     resultArea.append("[Line " + (i + 1) + ", Index " + index + "] " + lines.get(i).trim() + "\n");
                 }
-
-                // FIX: Increment by 1 to allow overlapping matches
-                index += 1;
+                index += searchPattern.length();
             }
         }
         resultArea.insert("Total Occurrences Found: " + count + "\n\n", 23);
@@ -150,9 +152,5 @@ public class TextSearchGUI extends JFrame {
         boolean before = (start == 0) || !Character.isLetterOrDigit(line.charAt(start - 1));
         boolean after = (start + length == line.length()) || !Character.isLetterOrDigit(line.charAt(start + length));
         return before && after;
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(TextSearchGUI::new);
     }
 }
